@@ -1,3 +1,7 @@
+/*
+https://github.com/super-continent
+*/
+
 use imgui::{
     sys::{
         igGetIO, igGetMouseCursor, igIsAnyMouseDown, ImGuiConfigFlags_NoMouseCursorChange,
@@ -37,10 +41,6 @@ fn loword(l: u32) -> u16 {
 #[inline]
 fn hiword(l: u32) -> u16 {
     ((l >> 16) & 0xffff) as u16
-}
-
-fn get_xbutton_wparam(w_param: u32) -> MOUSEHOOKSTRUCTEX_MOUSE_DATA {
-    MOUSEHOOKSTRUCTEX_MOUSE_DATA(hiword(w_param) as u32)
 }
 
 fn get_wheel_delta_wparam(w_param: u32) -> u32 {
@@ -96,7 +96,7 @@ impl Win32Impl {
 
         // Set up display size every frame to handle resizing
         let mut rect: RECT = std::mem::zeroed();
-        if GetClientRect(self.hwnd, &mut rect).as_bool() == false {
+        if !GetClientRect(self.hwnd, &mut rect).as_bool() {
             return Err(Win32ImplError::ExternalError(format!(
                 "GetClientRect failed with last error `{:#?}`",
                 GetLastError()
@@ -142,7 +142,7 @@ impl Win32Impl {
             let y = io.mouse_pos[1] as i32;
             let mut pos = POINT { x, y };
 
-            if ClientToScreen(self.hwnd, &mut pos).as_bool() == true {
+            if ClientToScreen(self.hwnd, &mut pos).as_bool() {
                 SetCursorPos(pos.x, pos.y);
             }
         }
@@ -150,9 +150,9 @@ impl Win32Impl {
         io.mouse_pos = [-f32::MAX, -f32::MAX];
         let mut pos: POINT = std::mem::zeroed();
         let foreground_hwnd = GetForegroundWindow();
-        if (self.hwnd == foreground_hwnd || IsChild(foreground_hwnd, self.hwnd).as_bool() == true)
-            && GetCursorPos(&mut pos).as_bool() == true
-            && ScreenToClient(self.hwnd, &mut pos).as_bool() == true
+        if (self.hwnd == foreground_hwnd || IsChild(foreground_hwnd, self.hwnd).as_bool())
+            && GetCursorPos(&mut pos).as_bool()
+            && ScreenToClient(self.hwnd, &mut pos).as_bool()
         {
             io.mouse_pos = [pos.x as f32, pos.y as f32];
         };
@@ -180,13 +180,7 @@ pub unsafe fn imgui_win32_window_proc(
                 WM_LBUTTONDOWN | WM_LBUTTONDBLCLK => 0,
                 WM_RBUTTONDOWN | WM_RBUTTONDBLCLK => 1,
                 WM_MBUTTONDOWN | WM_MBUTTONDBLCLK => 2,
-                WM_XBUTTONDOWN | WM_XBUTTONDBLCLK => {
-                    if get_xbutton_wparam(w_param) == XBUTTON1 {
-                        3
-                    } else {
-                        4
-                    }
-                }
+                WM_XBUTTONDOWN | WM_XBUTTONDBLCLK => 3,
                 _ => 0,
             };
 
@@ -203,13 +197,7 @@ pub unsafe fn imgui_win32_window_proc(
                 WM_LBUTTONUP => 0,
                 WM_RBUTTONUP => 1,
                 WM_MBUTTONUP => 2,
-                WM_XBUTTONUP => {
-                    if get_xbutton_wparam(w_param) == XBUTTON1 {
-                        3
-                    } else {
-                        4
-                    }
-                }
+                WM_XBUTTONUP => 3,
                 _ => 0,
             };
 
